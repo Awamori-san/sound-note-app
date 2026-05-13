@@ -4,22 +4,26 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>叩いた音をドレミ判定</title>
+
 <style>
 body{
   font-family:-apple-system,BlinkMacSystemFont,sans-serif;
   text-align:center;
   padding:30px;
 }
+
 button{
   font-size:22px;
   padding:16px 26px;
   border-radius:14px;
   margin:8px;
 }
+
 #note{
   font-size:72px;
   margin-top:30px;
 }
+
 #freq{
   font-size:24px;
   color:#666;
@@ -30,15 +34,25 @@ button{
 <body>
 
 <h1>叩いた音をドレミ判定</h1>
-<p>コップや皿を叩くと、近い音階を表示します</p>
 
-<button onclick="startAudio()">マイク開始</button>
-<button onclick="stopAudio()">マイク停止</button>
+<p>
+コップや皿を叩くと、
+近い音階を表示します
+</p>
+
+<button onclick="startAudio()">
+マイク開始
+</button>
+
+<button onclick="stopAudio()">
+マイク停止
+</button>
 
 <div id="note">--</div>
 <div id="freq">停止中</div>
 
 <script>
+
 let audioContext;
 let analyser;
 let mic;
@@ -53,67 +67,110 @@ const notes = [
 ];
 
 async function startAudio(){
+
   if(isRunning) return;
 
-  audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  audioContext = new (
+    window.AudioContext ||
+    window.webkitAudioContext
+  )();
 
-  currentStream = await navigator.mediaDevices.getUserMedia({ audio:true });
+  currentStream =
+    await navigator.mediaDevices.getUserMedia({
+      audio:true
+    });
 
-  mic = audioContext.createMediaStreamSource(currentStream);
+  mic =
+    audioContext.createMediaStreamSource(currentStream);
 
-  analyser = audioContext.createAnalyser();
+  analyser =
+    audioContext.createAnalyser();
+
   analyser.fftSize = 4096;
 
-  dataArray = new Float32Array(analyser.fftSize);
+  dataArray =
+    new Float32Array(analyser.fftSize);
 
   mic.connect(analyser);
 
   isRunning = true;
 
-  document.getElementById("freq").textContent = "測定中...";
+  document.getElementById("freq")
+    .textContent = "測定中...";
 
   detectPitch();
 }
 
 function stopAudio(){
+
   isRunning = false;
 
   if(currentStream){
-    currentStream.getTracks().forEach(track => track.stop());
+
+    currentStream
+      .getTracks()
+      .forEach(track => track.stop());
+
     currentStream = null;
   }
 
   if(audioContext){
+
     audioContext.close();
+
     audioContext = null;
   }
 
-  document.getElementById("note").textContent = "--";
-  document.getElementById("freq").textContent = "停止中";
+  document.getElementById("note")
+    .textContent = "--";
+
+  document.getElementById("freq")
+    .textContent = "停止中";
 }
 
 function detectPitch(){
+
   if(!isRunning) return;
 
   analyser.getFloatTimeDomainData(dataArray);
 
-  const freq = autoCorrelate(dataArray, audioContext.sampleRate);
+  const freq =
+    autoCorrelate(
+      dataArray,
+      audioContext.sampleRate
+    );
 
   if(freq > 60 && freq < 2000){
-    const noteNumber = Math.round(12 * Math.log2(freq / 440) + 69);
-    const noteName = notes[noteNumber % 12];
-    const octave = Math.floor(noteNumber / 12) - 1;
 
-    document.getElementById("note").textContent = noteName + octave;
-    document.getElementById("freq").textContent =
-      "周波数: " + freq.toFixed(1) + " Hz";
+    const noteNumber =
+      Math.round(
+        12 * Math.log2(freq / 440) + 69
+      );
+
+    const noteName =
+      notes[noteNumber % 12];
+
+    const octave =
+      Math.floor(noteNumber / 12) - 1;
+
+    document.getElementById("note")
+      .textContent =
+      noteName + octave;
+
+    document.getElementById("freq")
+      .textContent =
+      "周波数: " +
+      freq.toFixed(1) +
+      " Hz";
   }
 
   requestAnimationFrame(detectPitch);
 }
 
 function autoCorrelate(buffer,sampleRate){
+
   let SIZE = buffer.length;
+
   let rms = 0;
 
   for(let i=0;i<SIZE;i++){
@@ -122,23 +179,39 @@ function autoCorrelate(buffer,sampleRate){
 
   rms = Math.sqrt(rms/SIZE);
 
-  if(rms < 0.02) return -1;
+  if(rms < 0.02){
+    return -1;
+  }
 
   let bestOffset = -1;
   let bestCorrelation = 0;
 
-  for(let offset=20; offset<SIZE/2; offset++){
+  for(let offset=20;
+      offset<SIZE/2;
+      offset++){
+
     let correlation = 0;
 
-    for(let i=0; i<SIZE/2; i++){
-      correlation += Math.abs(buffer[i] - buffer[i+offset]);
+    for(let i=0;
+        i<SIZE/2;
+        i++){
+
+      correlation += Math.abs(
+        buffer[i] -
+        buffer[i+offset]
+      );
     }
 
-    correlation = 1 - correlation/(SIZE/2);
+    correlation =
+      1 - correlation/(SIZE/2);
 
     if(correlation > bestCorrelation){
-      bestCorrelation = correlation;
-      bestOffset = offset;
+
+      bestCorrelation =
+        correlation;
+
+      bestOffset =
+        offset;
     }
   }
 
@@ -148,6 +221,7 @@ function autoCorrelate(buffer,sampleRate){
 
   return -1;
 }
+
 </script>
 
 </body>
