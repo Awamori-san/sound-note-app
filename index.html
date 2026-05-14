@@ -36,6 +36,7 @@ button{
   max-width:760px;
   height:190px;
   margin:24px auto;
+  white-space:nowrap;
   user-select:none;
 }
 
@@ -44,7 +45,7 @@ button{
   display:inline-flex;
   align-items:flex-end;
   justify-content:center;
-  width:13.5%;
+  width:14.28%;
   height:180px;
   border:1px solid #333;
   background:white;
@@ -111,19 +112,13 @@ button{
 <div id="freq">停止中</div>
 
 <div id="keyboard">
-  <div class="white-key" data-note="ド">ド</div>
-  <div class="white-key" data-note="レ">レ</div>
-  <div class="white-key" data-note="ミ">ミ</div>
-  <div class="white-key" data-note="ファ">ファ</div>
-  <div class="white-key" data-note="ソ">ソ</div>
-  <div class="white-key" data-note="ラ">ラ</div>
-  <div class="white-key" data-note="シ">シ</div>
+  <div class="white-key" data-note="ド">ド</div><div class="white-key" data-note="レ">レ</div><div class="white-key" data-note="ミ">ミ</div><div class="white-key" data-note="ファ">ファ</div><div class="white-key" data-note="ソ">ソ</div><div class="white-key" data-note="ラ">ラ</div><div class="white-key" data-note="シ">シ</div>
 
-  <div class="black-key" data-note="ド#" style="left:9.5%;">ド#</div>
-  <div class="black-key" data-note="レ#" style="left:23%;">レ#</div>
-  <div class="black-key" data-note="ファ#" style="left:50%;">ファ#</div>
-  <div class="black-key" data-note="ソ#" style="left:63.5%;">ソ#</div>
-  <div class="black-key" data-note="ラ#" style="left:77%;">ラ#</div>
+  <div class="black-key" data-note="ド#" style="left:10%;"></div>
+  <div class="black-key" data-note="レ#" style="left:24%;"></div>
+  <div class="black-key" data-note="ファ#" style="left:52%;"></div>
+  <div class="black-key" data-note="ソ#" style="left:66%;"></div>
+  <div class="black-key" data-note="ラ#" style="left:80%;"></div>
 </div>
 
 <audio id="audioPlayer" controls></audio>
@@ -133,7 +128,6 @@ button{
 <a id="downloadLink"></a>
 
 <script>
-
 let audioContext;
 let analyser;
 let mic;
@@ -191,7 +185,6 @@ function stopAudio(){
   isRunning = false;
 
   if(currentStream){
-
     currentStream
       .getTracks()
       .forEach(track => track.stop());
@@ -200,9 +193,7 @@ function stopAudio(){
   }
 
   if(audioContext){
-
     audioContext.close();
-
     audioContext = null;
   }
 
@@ -260,9 +251,10 @@ function highlightKey(noteName){
 
   clearKeyboard();
 
-  const key = document.querySelector(
-    `[data-note="${noteName}"]`
-  );
+  const key =
+    document.querySelector(
+      `[data-note="${noteName}"]`
+    );
 
   if(!key) return;
 
@@ -287,7 +279,6 @@ function clearKeyboard(){
 function autoCorrelate(buffer,sampleRate){
 
   let SIZE = buffer.length;
-
   let rms = 0;
 
   for(let i=0;i<SIZE;i++){
@@ -303,15 +294,11 @@ function autoCorrelate(buffer,sampleRate){
   let bestOffset = -1;
   let bestCorrelation = 0;
 
-  for(let offset=20;
-      offset<SIZE/2;
-      offset++){
+  for(let offset=20; offset<SIZE/2; offset++){
 
     let correlation = 0;
 
-    for(let i=0;
-        i<SIZE/2;
-        i++){
+    for(let i=0; i<SIZE/2; i++){
 
       correlation += Math.abs(
         buffer[i] -
@@ -323,12 +310,8 @@ function autoCorrelate(buffer,sampleRate){
       1 - correlation/(SIZE/2);
 
     if(correlation > bestCorrelation){
-
-      bestCorrelation =
-        correlation;
-
-      bestOffset =
-        offset;
+      bestCorrelation = correlation;
+      bestOffset = offset;
     }
   }
 
@@ -363,7 +346,8 @@ async function startRecording(){
       new Blob(recordedChunks,
       { type:'audio/webm' });
 
-    const url = URL.createObjectURL(blob);
+    const url =
+      URL.createObjectURL(blob);
 
     const audioPlayer =
       document.getElementById('audioPlayer');
@@ -381,6 +365,7 @@ async function startRecording(){
       recordingStream
         .getTracks()
         .forEach(track => track.stop());
+
       recordingStream = null;
     }
   };
@@ -400,7 +385,6 @@ function stopRecording(){
   document.getElementById("freq")
     .textContent = "録音停止";
 }
-
 </script>
 
 </body>
