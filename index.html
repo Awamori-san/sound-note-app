@@ -9,7 +9,7 @@
 body{
   font-family:-apple-system,BlinkMacSystemFont,sans-serif;
   text-align:center;
-  padding:30px;
+  padding:24px;
 }
 
 button{
@@ -21,17 +21,71 @@ button{
 
 #note{
   font-size:72px;
-  margin-top:30px;
+  margin-top:24px;
 }
 
 #freq{
   font-size:24px;
   color:#666;
+  margin-bottom:20px;
+}
+
+#keyboard{
+  position:relative;
+  width:100%;
+  max-width:760px;
+  height:190px;
+  margin:24px auto;
+  user-select:none;
+}
+
+.white-key{
+  position:relative;
+  display:inline-flex;
+  align-items:flex-end;
+  justify-content:center;
+  width:13.5%;
+  height:180px;
+  border:1px solid #333;
+  background:white;
+  box-sizing:border-box;
+  font-size:18px;
+  padding-bottom:12px;
+}
+
+.black-key{
+  position:absolute;
+  top:0;
+  width:8%;
+  height:110px;
+  background:#111;
+  color:white;
+  z-index:2;
+  display:flex;
+  align-items:flex-end;
+  justify-content:center;
+  font-size:14px;
+  padding-bottom:8px;
+  box-sizing:border-box;
+  border-radius:0 0 6px 6px;
+}
+
+.active-white{
+  background:#ffe680;
+}
+
+.active-black{
+  background:#ff9800;
+  color:#111;
 }
 
 #audioPlayer{
   margin-top:20px;
   width:90%;
+}
+
+#downloadLink{
+  font-size:20px;
 }
 </style>
 </head>
@@ -41,30 +95,36 @@ button{
 <h1>叩いた音をドレミ判定</h1>
 
 <p>
-コップや皿を叩くと、
-近い音階を表示します
+コップや皿を叩くと、近い音階を表示し、
+対応するピアノ鍵盤が光ります
 </p>
 
-<button onclick="startAudio()">
-マイク開始
-</button>
-
-<button onclick="stopAudio()">
-マイク停止
-</button>
+<button onclick="startAudio()">マイク開始</button>
+<button onclick="stopAudio()">マイク停止</button>
 
 <br>
 
-<button onclick="startRecording()">
-録音開始
-</button>
-
-<button onclick="stopRecording()">
-録音停止
-</button>
+<button onclick="startRecording()">録音開始</button>
+<button onclick="stopRecording()">録音停止</button>
 
 <div id="note">--</div>
 <div id="freq">停止中</div>
+
+<div id="keyboard">
+  <div class="white-key" data-note="ド">ド</div>
+  <div class="white-key" data-note="レ">レ</div>
+  <div class="white-key" data-note="ミ">ミ</div>
+  <div class="white-key" data-note="ファ">ファ</div>
+  <div class="white-key" data-note="ソ">ソ</div>
+  <div class="white-key" data-note="ラ">ラ</div>
+  <div class="white-key" data-note="シ">シ</div>
+
+  <div class="black-key" data-note="ド#" style="left:9.5%;">ド#</div>
+  <div class="black-key" data-note="レ#" style="left:23%;">レ#</div>
+  <div class="black-key" data-note="ファ#" style="left:50%;">ファ#</div>
+  <div class="black-key" data-note="ソ#" style="left:63.5%;">ソ#</div>
+  <div class="black-key" data-note="ラ#" style="left:77%;">ラ#</div>
+</div>
 
 <audio id="audioPlayer" controls></audio>
 
@@ -83,6 +143,7 @@ let isRunning = false;
 
 let mediaRecorder;
 let recordedChunks = [];
+let recordingStream;
 
 const notes = [
 "ド","ド#","レ","レ#","ミ",
@@ -150,6 +211,8 @@ function stopAudio(){
 
   document.getElementById("freq")
     .textContent = "停止中";
+
+  clearKeyboard();
 }
 
 function detectPitch(){
@@ -186,9 +249,39 @@ function detectPitch(){
       "周波数: " +
       freq.toFixed(1) +
       " Hz";
+
+    highlightKey(noteName);
   }
 
   requestAnimationFrame(detectPitch);
+}
+
+function highlightKey(noteName){
+
+  clearKeyboard();
+
+  const key = document.querySelector(
+    `[data-note="${noteName}"]`
+  );
+
+  if(!key) return;
+
+  if(key.classList.contains("white-key")){
+    key.classList.add("active-white");
+  }else{
+    key.classList.add("active-black");
+  }
+}
+
+function clearKeyboard(){
+
+  document
+    .querySelectorAll(".white-key")
+    .forEach(key => key.classList.remove("active-white"));
+
+  document
+    .querySelectorAll(".black-key")
+    .forEach(key => key.classList.remove("active-black"));
 }
 
 function autoCorrelate(buffer,sampleRate){
@@ -248,7 +341,7 @@ function autoCorrelate(buffer,sampleRate){
 
 async function startRecording(){
 
-  const stream =
+  recordingStream =
     await navigator.mediaDevices.getUserMedia({
       audio:true
     });
@@ -256,7 +349,7 @@ async function startRecording(){
   recordedChunks = [];
 
   mediaRecorder =
-    new MediaRecorder(stream);
+    new MediaRecorder(recordingStream);
 
   mediaRecorder.ondataavailable = event => {
     if(event.data.size > 0){
@@ -283,6 +376,13 @@ async function startRecording(){
     downloadLink.href = url;
     downloadLink.download = 'sound_recording.webm';
     downloadLink.textContent = '録音ファイルを保存';
+
+    if(recordingStream){
+      recordingStream
+        .getTracks()
+        .forEach(track => track.stop());
+      recordingStream = null;
+    }
   };
 
   mediaRecorder.start();
@@ -293,7 +393,7 @@ async function startRecording(){
 
 function stopRecording(){
 
-  if(mediaRecorder){
+  if(mediaRecorder && mediaRecorder.state !== "inactive"){
     mediaRecorder.stop();
   }
 
