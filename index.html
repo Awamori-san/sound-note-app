@@ -13,8 +13,8 @@ body{
 }
 
 button{
-  font-size:22px;
-  padding:16px 26px;
+  font-size:20px;
+  padding:14px 22px;
   border-radius:14px;
   margin:8px;
 }
@@ -27,6 +27,11 @@ button{
 #freq{
   font-size:24px;
   color:#666;
+}
+
+#audioPlayer{
+  margin-top:20px;
+  width:90%;
 }
 </style>
 </head>
@@ -48,8 +53,24 @@ button{
 マイク停止
 </button>
 
+<br>
+
+<button onclick="startRecording()">
+録音開始
+</button>
+
+<button onclick="stopRecording()">
+録音停止
+</button>
+
 <div id="note">--</div>
 <div id="freq">停止中</div>
+
+<audio id="audioPlayer" controls></audio>
+
+<br><br>
+
+<a id="downloadLink"></a>
 
 <script>
 
@@ -59,6 +80,9 @@ let mic;
 let dataArray;
 let currentStream;
 let isRunning = false;
+
+let mediaRecorder;
+let recordedChunks = [];
 
 const notes = [
 "ド","ド#","レ","レ#","ミ",
@@ -220,6 +244,61 @@ function autoCorrelate(buffer,sampleRate){
   }
 
   return -1;
+}
+
+async function startRecording(){
+
+  const stream =
+    await navigator.mediaDevices.getUserMedia({
+      audio:true
+    });
+
+  recordedChunks = [];
+
+  mediaRecorder =
+    new MediaRecorder(stream);
+
+  mediaRecorder.ondataavailable = event => {
+    if(event.data.size > 0){
+      recordedChunks.push(event.data);
+    }
+  };
+
+  mediaRecorder.onstop = () => {
+
+    const blob =
+      new Blob(recordedChunks,
+      { type:'audio/webm' });
+
+    const url = URL.createObjectURL(blob);
+
+    const audioPlayer =
+      document.getElementById('audioPlayer');
+
+    audioPlayer.src = url;
+
+    const downloadLink =
+      document.getElementById('downloadLink');
+
+    downloadLink.href = url;
+    downloadLink.download = 'sound_recording.webm';
+    downloadLink.textContent = '録音ファイルを保存';
+  };
+
+  mediaRecorder.start();
+
+  document.getElementById("freq")
+    .textContent = "録音中...";
+}
+
+function stopRecording(){
+
+  if(mediaRecorder){
+    mediaRecorder.stop();
+  }
+
+  document.getElementById("freq")
+    .textContent = "録音停止";
 }
 
 </script>
